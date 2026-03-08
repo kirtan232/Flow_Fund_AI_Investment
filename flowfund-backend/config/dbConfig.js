@@ -4,11 +4,24 @@
  */
 require('dotenv').config();
 
-const connectionUrl = process.env.MYSQL_PUBLIC_URL || process.env.DATABASE_URL;
+const connectionUrl =
+  process.env.MYSQL_PUBLIC_URL ||
+  process.env.DATABASE_URL ||
+  process.env.MYSQL_URL;
 
 function getPoolConfig() {
   const tz = { timezone: '+00:00' };
-  if (connectionUrl) return connectionUrl;
+  if (connectionUrl) {
+    const url = new URL(connectionUrl);
+    return {
+      host: url.hostname,
+      port: Number(url.port) || 3306,
+      user: url.username,
+      password: url.password,
+      database: url.pathname.replace('/', ''),
+      ...tz,
+    };
+  }
   return {
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT) || 3306,
