@@ -1,0 +1,19 @@
+const express = require('express');
+const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware');
+const {
+  createLinkToken,
+  exchangePublicToken,
+  getAccounts,
+  getTransactions,
+  getBalances,
+} = require('../controllers/plaidController');
+
+// All Plaid routes require an authenticated session
+router.post('/create-link-token', authMiddleware, createLinkToken);
+router.post('/exchange-public-token', authMiddleware, exchangePublicToken);
+router.get('/accounts', authMiddleware, getAccounts);
+router.get('/transactions', authMiddleware, getTransactions);
+router.get('/balances', authMiddleware, getBalances);
+
+module.exports = router;
