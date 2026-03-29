@@ -57,49 +57,72 @@ async function buildSnapshot(user_id) {
   }));
 
   // ── Top merchants (90d) ─────────────────────────────────────────────────
-  const [merchantRows] = await pool.query(
-    `SELECT
-       COALESCE(NULLIF(merchant_name, ''), description) AS merchant,
-       COALESCE(SUM(amount), 0) AS total
-     FROM transactions t
-     JOIN bank_accounts b ON t.account_id = b.account_id
-     WHERE b.user_id = ?
-       AND t.transaction_type = 'EXPENSE'
-       AND t.transaction_date >= ?
-       AND COALESCE(NULLIF(merchant_name, ''), description) IS NOT NULL
-     GROUP BY merchant
-     ORDER BY total DESC
-     LIMIT 5`,
-    [user_id, d90]
-  );
-  const topMerchants = merchantRows.map(r => ({
-    merchant: r.merchant,
-    amount: parseFloat(r.total),
-  }));
+  let topMerchants = [];
+  try {
+    const [merchantRows] = await pool.query(
+      `SELECT
+         COALESCE(NULLIF(merchant_name, ''), description) AS merchant,
+         COALESCE(SUM(amount), 0) AS total
+       FROM transactions t
+       JOIN bank_accounts b ON t.account_id = b.account_id
+       WHERE b.user_id = ?
+         AND t.transaction_type = 'EXPENSE'
+         AND t.transaction_date >= ?
+         AND COALESCE(NULLIF(merchant_name, ''), description) IS NOT NULL
+       GROUP BY merchant
+       ORDER BY total DESC
+       LIMIT 5`,
+      [user_id, d90]
+    );
+    topMerchants = merchantRows.map(r => ({
+      merchant: r.merchant,
+      amount: parseFloat(r.total),
+    }));
+  } catch (_) {
+    // merchant_name column may not exist yet — fall back to description only
+    const [merchantRows] = await pool.query(
+      `SELECT description AS merchant, COALESCE(SUM(amount), 0) AS total
+       FROM transactions t
+       JOIN bank_accounts b ON t.account_id = b.account_id
+       WHERE b.user_id = ? AND t.transaction_type = 'EXPENSE'
+         AND t.transaction_date >= ? AND description IS NOT NULL
+       GROUP BY description ORDER BY total DESC LIMIT 5`,
+      [user_id, d90]
+    );
+    topMerchants = merchantRows.map(r => ({
+      merchant: r.merchant,
+      amount: parseFloat(r.total),
+    }));
+  }
 
   // ── Recurring charges (same merchant appearing 2+ months in 90d window) ─
-  const [recurRows] = await pool.query(
-    `SELECT
-       COALESCE(NULLIF(merchant_name, ''), description) AS merchant,
-       COUNT(DISTINCT DATE_FORMAT(transaction_date, '%Y-%m')) AS month_count,
-       AVG(amount) AS avg_amount
-     FROM transactions t
-     JOIN bank_accounts b ON t.account_id = b.account_id
-     WHERE b.user_id = ?
-       AND t.transaction_type = 'EXPENSE'
-       AND t.transaction_date >= ?
-       AND COALESCE(NULLIF(merchant_name, ''), description) IS NOT NULL
-     GROUP BY merchant
-     HAVING month_count >= 2
-     ORDER BY avg_amount DESC
-     LIMIT 8`,
-    [user_id, d90]
-  );
-  const recurringCharges = recurRows.map(r => ({
-    merchant: r.merchant,
-    amount: parseFloat(r.avg_amount).toFixed(2),
-    frequency: 'monthly',
-  }));
+  let recurringCharges = [];
+  try {
+    const [recurRows] = await pool.query(
+      `SELECT
+         COALESCE(NULLIF(merchant_name, ''), description) AS merchant,
+         COUNT(DISTINCT DATE_FORMAT(transaction_date, '%Y-%m')) AS month_count,
+         AVG(amount) AS avg_amount
+       FROM transactions t
+       JOIN bank_accounts b ON t.account_id = b.account_id
+       WHERE b.user_id = ?
+         AND t.transaction_type = 'EXPENSE'
+         AND t.transaction_date >= ?
+         AND COALESCE(NULLIF(merchant_name, ''), description) IS NOT NULL
+       GROUP BY merchant
+       HAVING month_count >= 2
+       ORDER BY avg_amount DESC
+       LIMIT 8`,
+      [user_id, d90]
+    );
+    recurringCharges = recurRows.map(r => ({
+      merchant: r.merchant,
+      amount: parseFloat(r.avg_amount).toFixed(2),
+      frequency: 'monthly',
+    }));
+  } catch (_) {
+    // merchant_name column may not exist yet — skip recurring detection
+  }
 
   // ── Spending spikes (last 30d vs prior 30d by category) ─────────────────
   const [spikeRows] = await pool.query(

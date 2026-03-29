@@ -94,7 +94,12 @@ exports.sendMessage = async (req, res) => {
       hasFinancialData: snapshot.hasData,
     });
   } catch (err) {
-    console.error('chat error:', err.message);
+    console.error('chat error:', {
+      message: err.message,
+      status: err.status,
+      errorDetails: err.errorDetails,
+      stack: err.stack,
+    });
     res.status(500).json({ error: 'Failed to generate response' });
   }
 };
