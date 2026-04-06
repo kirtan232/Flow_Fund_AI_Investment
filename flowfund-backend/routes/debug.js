@@ -3,10 +3,14 @@ const router = express.Router();
 
 // GET /api/debug/ai-health — NO auth required, NO secrets exposed
 router.get('/ai-health', async (_req, res) => {
+  const avKey = (process.env.ALPHA_VANTAGE_API_KEY || process.env.ALPHAVANTAGE_API_KEY || '').trim();
   const report = {
     status: 'ok',
     geminiKeyPresent: !!process.env.GEMINI_API_KEY,
     model: 'gemini-2.5-flash',
+    alphaVantageKeyPresent: avKey.length > 0,
+    alphaVantageKeyName: process.env.ALPHA_VANTAGE_API_KEY ? 'ALPHA_VANTAGE_API_KEY'
+      : process.env.ALPHAVANTAGE_API_KEY ? 'ALPHAVANTAGE_API_KEY' : 'NOT SET',
     sdkLoaded: false,
     geminiClientInitialized: false,
     geminiTestCallSuccess: false,
