@@ -116,6 +116,23 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
+-- 12. goals
+CREATE TABLE IF NOT EXISTS goals (
+    goal_id        INT AUTO_INCREMENT PRIMARY KEY,
+    user_id        INT NOT NULL,
+    name           VARCHAR(100) NOT NULL,
+    type           ENUM('savings','debt_payoff','spending_limit','investment_target') NOT NULL,
+    target_amount  DECIMAL(15,2) NOT NULL,
+    current_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    target_date    DATE NOT NULL,
+    notes          TEXT,
+    status         ENUM('active','completed','archived') NOT NULL DEFAULT 'active',
+    auto_track     BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
 -- 11. admins
 CREATE TABLE IF NOT EXISTS admins (
     admin_id INT AUTO_INCREMENT PRIMARY KEY,

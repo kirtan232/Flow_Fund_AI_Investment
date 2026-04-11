@@ -17,6 +17,7 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/market', require('./routes/market'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/investment-readiness', require('./routes/investmentReadiness'));
+app.use('/api/goals', require('./routes/goals'));
 app.use('/api/debug', require('./routes/debug'));
 
 app.listen(process.env.PORT || 5000, () => {

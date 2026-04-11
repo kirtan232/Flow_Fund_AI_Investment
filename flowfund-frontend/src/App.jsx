@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import MarketAnalysis from './pages/MarketAnalysis';
 import ProfilePage from './pages/ProfilePage';
 import InvestmentReadinessPage from './pages/InvestmentReadinessPage';
+import GoalsPage from './pages/GoalsPage';
 import { scheduleSessionExpiry } from './utils/session';
 
 function ProtectedRoute({ children }) {
@@ -73,6 +74,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <InvestmentReadinessPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/goals"
+        element={
+          <ProtectedRoute>
+            <GoalsPage />
           </ProtectedRoute>
         }
       />
